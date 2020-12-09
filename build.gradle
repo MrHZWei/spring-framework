@@ -12,6 +12,23 @@ plugins {
 	id "org.jetbrains.kotlin.plugin.serialization" version "1.4.21" apply false
 }
 
+// 新加配置，需要配置在plugins{} 下面
+repositories {
+	maven { url 'http://maven.aliyun.com/nexus/content/repositories/google' }
+	maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+	maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter'}
+	maven { url 'http://repo.springsource.org/plugins-release'}
+}
+// 新加配置，需要配置在plugins{} 下面
+allprojects {
+	repositories {
+		maven { url 'http://maven.aliyun.com/nexus/content/repositories/google' }
+		maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+		maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter'}
+		maven { url 'http://repo.springsource.org/plugins-release'}
+	}
+}
+
 ext {
 	moduleProjects = subprojects.findAll { it.name.startsWith("spring-") }
 	javaProjects = subprojects - project(":framework-bom")
@@ -291,6 +308,7 @@ configure(allprojects) { project ->
 		repositories {
 			mavenCentral()
 			maven { url "https://repo.spring.io/libs-spring-framework-build" }
+			maven{ url 'http://maven.aliyun.com/nexus/content/groups/public/'}
 		}
 	}
 	configurations.all {
