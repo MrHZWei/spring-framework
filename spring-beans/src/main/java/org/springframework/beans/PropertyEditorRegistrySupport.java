@@ -101,6 +101,9 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	private static final boolean shouldIgnoreXml = SpringProperties.getFlag("spring.xml.ignore");
 
 
+	/**
+	 * 用于类型转换的服务接口。 这是转换系统的入口。 调用convert(Object, Class)使用此系统执行线程安全的类型转换
+	 */
 	@Nullable
 	private ConversionService conversionService;
 
@@ -125,15 +128,14 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 
 
 	/**
-	 * Specify a Spring 3.0 ConversionService to use for converting
-	 * property values, as an alternative to JavaBeans PropertyEditors.
+	 * 通过子类AbstractPropertyAccessor在ConfigurablePropertyAccessor中实现的方法
 	 */
 	public void setConversionService(@Nullable ConversionService conversionService) {
 		this.conversionService = conversionService;
 	}
 
 	/**
-	 * Return the associated ConversionService, if any.
+	 * 通过子类AbstractPropertyAccessor在ConfigurablePropertyAccessor中实现的方法
 	 */
 	@Nullable
 	public ConversionService getConversionService() {
@@ -145,33 +147,29 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	// Management of default editors
 	//---------------------------------------------------------------------
 
+	//region 默认编辑器管理
 	/**
-	 * Activate the default editors for this registry instance,
-	 * allowing for lazily registering default editors when needed.
+	 * 激活此注册表实例的默认PropertyEditor
 	 */
 	protected void registerDefaultEditors() {
 		this.defaultEditorsActive = true;
 	}
 
 	/**
-	 * Activate config value editors which are only intended for configuration purposes,
-	 * such as {@link org.springframework.beans.propertyeditors.StringArrayPropertyEditor}.
-	 * <p>Those editors are not registered by default simply because they are in
-	 * general inappropriate for data binding purposes. Of course, you may register
-	 * them individually in any case, through {@link #registerCustomEditor}.
+	 * 激活仅用于配置目的的配置值的PropertyEditor，例如StringArrayPropertyEditor 。
+	 * 这些PropertyEditor默认情况下不会被注册，原因仅在于它们通常不适用于数据绑定。 也可以通过registerCustomEditor分别注册它们
 	 */
 	public void useConfigValueEditors() {
 		this.configValueEditorsActive = true;
 	}
 
 	/**
-	 * Override the default editor for the specified type with the given property editor.
-	 * <p>Note that this is different from registering a custom editor in that the editor
-	 * semantically still is a default editor. A ConversionService will override such a
-	 * default editor, whereas custom editors usually override the ConversionService.
-	 * @param requiredType the type of the property
-	 * @param propertyEditor the editor to register
-	 * @see #registerCustomEditor(Class, PropertyEditor)
+	 * 使用给定的PropertyEditor覆盖指定类型的默认PropertyEditor。
+	 * 注：这与注册自定义编辑器的不同之处在于，该编辑器在语义上仍然是默认编辑器。
+	 * ConversionService将覆盖此类默认编辑器，而自定义编辑器通常将覆盖ConversionService
+	 *
+	 * @param requiredType 属性的类型
+	 * @param propertyEditor 要注册的编辑器
 	 */
 	public void overrideDefaultEditor(Class<?> requiredType, PropertyEditor propertyEditor) {
 		if (this.overriddenDefaultEditors == null) {
@@ -181,23 +179,26 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	}
 
 	/**
-	 * Retrieve the default editor for the given property type, if any.
-	 * <p>Lazily registers the default editors, if they are active.
-	 * @param requiredType type of the property
-	 * @return the default editor, or {@code null} if none found
-	 * @see #registerDefaultEditors
+	 * 获取给定属性类型的默认PropertyEditor
+	 * 如果默认PropertyEditor为激活状态（defaultEditorsActive = true）则懒惰地注册默认PropertyEditor
+	 *
+	 * @param requiredType 属性的类型
+	 * @return 默认编辑器；如果找不到，则为nul
 	 */
 	@Nullable
 	public PropertyEditor getDefaultEditor(Class<?> requiredType) {
+		//默认PropertyEditor为未激活状态直接返回null
 		if (!this.defaultEditorsActive) {
 			return null;
 		}
+		//有先遍历覆盖的默认PropertyEditor，如果有直接返回
 		if (this.overriddenDefaultEditors != null) {
 			PropertyEditor editor = this.overriddenDefaultEditors.get(requiredType);
 			if (editor != null) {
 				return editor;
 			}
 		}
+		// 如果默认编辑器defaultEditors为空则加载
 		if (this.defaultEditors == null) {
 			createDefaultEditors();
 		}
@@ -205,7 +206,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	}
 
 	/**
-	 * Actually register the default editors for this registry instance.
+	 * 创建Spring定义的默认PropertyEditor（org.springframework.beans.propertyeditors包下的Editor）
 	 */
 	private void createDefaultEditors() {
 		this.defaultEditors = new HashMap<>(64);
@@ -270,7 +271,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 		this.defaultEditors.put(BigDecimal.class, new CustomNumberEditor(BigDecimal.class, true));
 		this.defaultEditors.put(BigInteger.class, new CustomNumberEditor(BigInteger.class, true));
 
-		// Only register config value editors if explicitly requested.
+		// 仅在明确要求时注册配置值编辑器。
 		if (this.configValueEditorsActive) {
 			StringArrayPropertyEditor sae = new StringArrayPropertyEditor();
 			this.defaultEditors.put(String[].class, sae);
@@ -281,8 +282,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	}
 
 	/**
-	 * Copy the default editors registered in this instance to the given target registry.
-	 * @param target the target registry to copy to
+	 * 将在此实例中注册的默认编辑器复制到给定的目标注册表
 	 */
 	protected void copyDefaultEditorsTo(PropertyEditorRegistrySupport target) {
 		target.defaultEditorsActive = this.defaultEditorsActive;
@@ -290,12 +290,13 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 		target.defaultEditors = this.defaultEditors;
 		target.overriddenDefaultEditors = this.overriddenDefaultEditors;
 	}
-
+	//endregion
 
 	//---------------------------------------------------------------------
 	// Management of custom editors
 	//---------------------------------------------------------------------
 
+	//region 自定义编辑器管理
 	@Override
 	public void registerCustomEditor(Class<?> requiredType, PropertyEditor propertyEditor) {
 		registerCustomEditor(requiredType, null, propertyEditor);
@@ -523,6 +524,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 			}
 		}
 	}
+	//endregion
 
 
 	/**

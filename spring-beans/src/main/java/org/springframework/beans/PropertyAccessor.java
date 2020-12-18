@@ -22,9 +22,7 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.lang.Nullable;
 
 /**
- * Common interface for classes that can access named properties
- * (such as bean properties of an object or fields in an object)
- * Serves as base interface for {@link BeanWrapper}.
+ * 可以访问命名属性（例如，对象的Bean属性或对象中的字段）的类的通用接口用作BeanWrapper基本接口。
  *
  * @author Juergen Hoeller
  * @since 1.1
@@ -35,199 +33,116 @@ import org.springframework.lang.Nullable;
 public interface PropertyAccessor {
 
 	/**
-	 * Path separator for nested properties.
-	 * Follows normal Java conventions: getFoo().getBar() would be "foo.bar".
+	 * 嵌套属性的路径分隔符
+	 * 例如："foo.bar"调用的方法就是getFoo().getBar()
 	 */
 	String NESTED_PROPERTY_SEPARATOR = ".";
-
-	/**
-	 * Path separator for nested properties.
-	 * Follows normal Java conventions: getFoo().getBar() would be "foo.bar".
-	 */
 	char NESTED_PROPERTY_SEPARATOR_CHAR = '.';
 
 	/**
-	 * Marker that indicates the start of a property key for an
-	 * indexed or mapped property like "person.addresses[0]".
+	 * 用于指示下标index的符号
+	 * 例如：person.addresses[0]中 "0"被符号标记，表示 "0"是一个下标index
 	 */
 	String PROPERTY_KEY_PREFIX = "[";
-
-	/**
-	 * Marker that indicates the start of a property key for an
-	 * indexed or mapped property like "person.addresses[0]".
-	 */
 	char PROPERTY_KEY_PREFIX_CHAR = '[';
-
-	/**
-	 * Marker that indicates the end of a property key for an
-	 * indexed or mapped property like "person.addresses[0]".
-	 */
 	String PROPERTY_KEY_SUFFIX = "]";
-
-	/**
-	 * Marker that indicates the end of a property key for an
-	 * indexed or mapped property like "person.addresses[0]".
-	 */
 	char PROPERTY_KEY_SUFFIX_CHAR = ']';
 
 
 	/**
-	 * Determine whether the specified property is readable.
-	 * <p>Returns {@code false} if the property doesn't exist.
-	 * @param propertyName the property to check
-	 * (may be a nested path and/or an indexed/mapped property)
-	 * @return whether the property is readable
+	 * 判断属性是否可读。如果属性不存在，则返回false
+	 *
+	 * @param propertyName 要检查的属性
+	 * (may be a nested path and/or an indexed/mapped property)【待验证】
+	 * @return 该属性是否可读
 	 */
 	boolean isReadableProperty(String propertyName);
 
 	/**
-	 * Determine whether the specified property is writable.
-	 * <p>Returns {@code false} if the property doesn't exist.
-	 * @param propertyName the property to check
-	 * (may be a nested path and/or an indexed/mapped property)
-	 * @return whether the property is writable
+	 * 判断属性是否可写。如果属性不存在，则返回false
+	 *
+	 * @param propertyName 要检查的属性
+	 * (may be a nested path and/or an indexed/mapped property)【待验证】
+	 * @return 该属性是否可写
 	 */
 	boolean isWritableProperty(String propertyName);
 
 	/**
-	 * Determine the property type for the specified property,
-	 * either checking the property descriptor or checking the value
-	 * in case of an indexed or mapped element.
-	 * @param propertyName the property to check
-	 * (may be a nested path and/or an indexed/mapped property)
-	 * @return the property type for the particular property,
-	 * or {@code null} if not determinable
-	 * @throws PropertyAccessException if the property was valid but the
-	 * accessor method failed
+	 * 获取属性的属性类型
+	 *
+	 * @param propertyName 要检查的属性（可以是嵌套路径/索引/映射的属性）
+	 * @return 属性类型，不确定则返回null
+	 * @throws PropertyAccessException 属性有效但是访问失败
 	 */
 	@Nullable
 	Class<?> getPropertyType(String propertyName) throws BeansException;
 
 	/**
-	 * Return a type descriptor for the specified property:
-	 * preferably from the read method, falling back to the write method.
-	 * @param propertyName the property to check
-	 * (may be a nested path and/or an indexed/mapped property)
-	 * @return the property type for the particular property,
-	 * or {@code null} if not determinable
-	 * @throws PropertyAccessException if the property was valid but the
-	 * accessor method failed
+	 * 获取属性的类型描述符：最好从read方法返回到write方法。
+	 *
+	 * @param propertyName 要检查的属性（可以是嵌套路径/索引/映射的属性）
+	 * @return 属性的类型描述符；如果不确定，则为null
+	 * @throws PropertyAccessException 属性有效，但访问器方法失败
 	 */
 	@Nullable
 	TypeDescriptor getPropertyTypeDescriptor(String propertyName) throws BeansException;
 
 	/**
-	 * Get the current value of the specified property.
-	 * @param propertyName the name of the property to get the value of
-	 * (may be a nested path and/or an indexed/mapped property)
-	 * @return the value of the property
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't readable
-	 * @throws PropertyAccessException if the property was valid but the
-	 * accessor method failed
+	 * 获取属性的值
+	 *
+	 * @param propertyName 要获取的属性名称（可以是嵌套路径/索引/映射的属性）
+	 * @return 属性的值
+	 * @throws InvalidPropertyException 指定属性不存在或不可读
+	 * @throws PropertyAccessException 属性有效，但访问器方法失败
 	 */
 	@Nullable
 	Object getPropertyValue(String propertyName) throws BeansException;
 
 	/**
-	 * Set the specified value as current property value.
-	 * @param propertyName the name of the property to set the value of
-	 * (may be a nested path and/or an indexed/mapped property)
-	 * @param value the new value
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't writable
-	 * @throws PropertyAccessException if the property was valid but the
-	 * accessor method failed or a type mismatch occurred
+	 * 属性赋值
+	 *
+	 * @param propertyName 要赋值的属性名称（可以是嵌套路径/索引/映射的属性）
+	 * @param value 新的属性值
+	 * @throws InvalidPropertyException 指定属性不存在或不可写
+	 * @throws PropertyAccessException 属性有效，但访问器方法失败
 	 */
 	void setPropertyValue(String propertyName, @Nullable Object value) throws BeansException;
 
 	/**
-	 * Set the specified value as current property value.
-	 * @param pv an object containing the new property value
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't writable
-	 * @throws PropertyAccessException if the property was valid but the
-	 * accessor method failed or a type mismatch occurred
+	 * 通过PropertyValue为属性赋值
+	 *
+	 * @param pv 包含新属性值的对象
+	 * @throws InvalidPropertyException 指定属性不存在或不可写
+	 * @throws PropertyAccessException 属性有效，但访问器方法失败
 	 */
 	void setPropertyValue(PropertyValue pv) throws BeansException;
 
 	/**
-	 * Perform a batch update from a Map.
-	 * <p>Bulk updates from PropertyValues are more powerful: This method is
-	 * provided for convenience. Behavior will be identical to that of
-	 * the {@link #setPropertyValues(PropertyValues)} method.
-	 * @param map a Map to take properties from. Contains property value objects,
-	 * keyed by property name
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't writable
-	 * @throws PropertyBatchUpdateException if one or more PropertyAccessExceptions
-	 * occurred for specific properties during the batch update. This exception bundles
-	 * all individual PropertyAccessExceptions. All other properties will have been
-	 * successfully updated.
+	 * 通过Map批量赋值
+	 *
+	 * @param map 包含新属性值的Map
+	 * @throws InvalidPropertyException 指定属性不存在或不可写
+	 * @throws PropertyBatchUpdateException 更新过程中如果有属性抛出PropertyAccessException异常不会影响其他属性更新，
+	 * 会最终抛出一个包含所有异常的PropertyBatchUpdateException异常，其他属性正常更新
 	 */
 	void setPropertyValues(Map<?, ?> map) throws BeansException;
 
 	/**
-	 * The preferred way to perform a batch update.
-	 * <p>Note that performing a batch update differs from performing a single update,
-	 * in that an implementation of this class will continue to update properties
-	 * if a <b>recoverable</b> error (such as a type mismatch, but <b>not</b> an
-	 * invalid field name or the like) is encountered, throwing a
-	 * {@link PropertyBatchUpdateException} containing all the individual errors.
-	 * This exception can be examined later to see all binding errors.
-	 * Properties that were successfully updated remain changed.
-	 * <p>Does not allow unknown fields or invalid fields.
-	 * @param pvs a PropertyValues to set on the target object
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't writable
-	 * @throws PropertyBatchUpdateException if one or more PropertyAccessExceptions
-	 * occurred for specific properties during the batch update. This exception bundles
-	 * all individual PropertyAccessExceptions. All other properties will have been
-	 * successfully updated.
-	 * @see #setPropertyValues(PropertyValues, boolean, boolean)
+	 * 通过PropertyValues批量赋值(不允许未知字段或无效字段)
+	 *
+	 * @param map 包含新属性值的PropertyValues
+	 * @throws InvalidPropertyException 指定属性不存在或不可写
+	 * @throws PropertyBatchUpdateException 更新过程中如果有属性抛出PropertyAccessException异常不会影响其他属性更新，
+	 * 会最终抛出一个包含所有异常的PropertyBatchUpdateException异常，其他属性正常更新
 	 */
 	void setPropertyValues(PropertyValues pvs) throws BeansException;
-
 	/**
-	 * Perform a batch update with more control over behavior.
-	 * <p>Note that performing a batch update differs from performing a single update,
-	 * in that an implementation of this class will continue to update properties
-	 * if a <b>recoverable</b> error (such as a type mismatch, but <b>not</b> an
-	 * invalid field name or the like) is encountered, throwing a
-	 * {@link PropertyBatchUpdateException} containing all the individual errors.
-	 * This exception can be examined later to see all binding errors.
-	 * Properties that were successfully updated remain changed.
-	 * @param pvs a PropertyValues to set on the target object
-	 * @param ignoreUnknown should we ignore unknown properties (not found in the bean)
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't writable
-	 * @throws PropertyBatchUpdateException if one or more PropertyAccessExceptions
-	 * occurred for specific properties during the batch update. This exception bundles
-	 * all individual PropertyAccessExceptions. All other properties will have been
-	 * successfully updated.
-	 * @see #setPropertyValues(PropertyValues, boolean, boolean)
+	 * 通过PropertyValues批量赋值(忽略未知字段)
 	 */
 	void setPropertyValues(PropertyValues pvs, boolean ignoreUnknown)
 			throws BeansException;
-
 	/**
-	 * Perform a batch update with full control over behavior.
-	 * <p>Note that performing a batch update differs from performing a single update,
-	 * in that an implementation of this class will continue to update properties
-	 * if a <b>recoverable</b> error (such as a type mismatch, but <b>not</b> an
-	 * invalid field name or the like) is encountered, throwing a
-	 * {@link PropertyBatchUpdateException} containing all the individual errors.
-	 * This exception can be examined later to see all binding errors.
-	 * Properties that were successfully updated remain changed.
-	 * @param pvs a PropertyValues to set on the target object
-	 * @param ignoreUnknown should we ignore unknown properties (not found in the bean)
-	 * @param ignoreInvalid should we ignore invalid properties (found but not accessible)
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't writable
-	 * @throws PropertyBatchUpdateException if one or more PropertyAccessExceptions
-	 * occurred for specific properties during the batch update. This exception bundles
-	 * all individual PropertyAccessExceptions. All other properties will have been
-	 * successfully updated.
+	 * 通过PropertyValues批量赋值(忽略无效字段)
 	 */
 	void setPropertyValues(PropertyValues pvs, boolean ignoreUnknown, boolean ignoreInvalid)
 			throws BeansException;
