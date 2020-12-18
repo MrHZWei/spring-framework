@@ -23,13 +23,8 @@ import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 
 /**
- * A BeanDefinition describes a bean instance, which has property values,
- * constructor argument values, and further information supplied by
- * concrete implementations.
- *
- * <p>This is just a minimal interface: The main intention is to allow a
- * {@link BeanFactoryPostProcessor} to introspect and modify property values
- * and other bean metadata.
+ * BeanDefinition描述了一个bean实例，该实例具有属性值，构造函数参数值以及具体实现所提供的更多信息。
+ * 这只是一个最小的接口：主要目的是允许BeanFactoryPostProcessor内省和修改属性值和其他bean元数据
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -41,16 +36,16 @@ import org.springframework.lang.Nullable;
 public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 
 	/**
-	 * Scope identifier for the standard singleton scope: {@value}.
-	 * <p>Note that extended bean factories might support further scopes.
+	 * 标准单例作用域的作用域标识符：“ singleton”。
+	 * 请注意，扩展的bean工厂可能支持更多范围。
 	 * @see #setScope
 	 * @see ConfigurableBeanFactory#SCOPE_SINGLETON
 	 */
 	String SCOPE_SINGLETON = ConfigurableBeanFactory.SCOPE_SINGLETON;
 
 	/**
-	 * Scope identifier for the standard prototype scope: {@value}.
-	 * <p>Note that extended bean factories might support further scopes.
+	 * 标准原型范围的范围标识符：“原型”。
+	 * 请注意，扩展的bean工厂可能支持更多范围。
 	 * @see #setScope
 	 * @see ConfigurableBeanFactory#SCOPE_PROTOTYPE
 	 */
@@ -58,8 +53,7 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 
 
 	/**
-	 * Role hint indicating that a {@code BeanDefinition} is a major part
-	 * of the application. Typically corresponds to a user-defined bean.
+	 * 角色提示，指示BeanDefinition是应用程序的主要部分。 通常对应于用户定义的bean。
 	 */
 	int ROLE_APPLICATION = 0;
 
