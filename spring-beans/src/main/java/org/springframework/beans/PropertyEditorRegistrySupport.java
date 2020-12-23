@@ -137,7 +137,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	// Management of default editors
 	//---------------------------------------------------------------------
 
-	//region 默认编辑器管理
+	//region 默认Editor管理
 	/**
 	 * 激活此注册表实例的默认PropertyEditor
 	 */
@@ -285,22 +285,27 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	//---------------------------------------------------------------------
 
 	//region 自定义编辑器管理
+
+	/**
+	 * 属性注册到Editor
+	 */
 	@Override
 	public void registerCustomEditor(Class<?> requiredType, PropertyEditor propertyEditor) {
 		registerCustomEditor(requiredType, null, propertyEditor);
 	}
-
 	@Override
 	public void registerCustomEditor(@Nullable Class<?> requiredType, @Nullable String propertyPath, PropertyEditor propertyEditor) {
 		if (requiredType == null && propertyPath == null) {
 			throw new IllegalArgumentException("Either requiredType or propertyPath is required");
 		}
+		//属性路径名不为空，创建CustomEditorHolder并存入customEditorsForPath
 		if (propertyPath != null) {
 			if (this.customEditorsForPath == null) {
 				this.customEditorsForPath = new LinkedHashMap<>(16);
 			}
 			this.customEditorsForPath.put(propertyPath, new CustomEditorHolder(propertyEditor, requiredType));
 		}
+		//属性路径名为空,直接将传入的Editor存入customEditors,置空customEditorCache
 		else {
 			if (this.customEditors == null) {
 				this.customEditors = new LinkedHashMap<>(16);
@@ -310,15 +315,20 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 		}
 	}
 
+	/**
+	 * 查询属性的Editor
+	 * 如果属性路径不为空，优先获取属性路径定制的Editor,如果不存在在通过属性类型查询定制Editor
+	 */
 	@Override
 	@Nullable
 	public PropertyEditor findCustomEditor(@Nullable Class<?> requiredType, @Nullable String propertyPath) {
 		Class<?> requiredTypeToUse = requiredType;
 		if (propertyPath != null) {
 			if (this.customEditorsForPath != null) {
-				// Check property-specific editor first.
+				// 直接通过属性路径和类型获取Editor
 				PropertyEditor editor = getCustomEditor(propertyPath, requiredType);
 				if (editor == null) {
+					// 遍历属性路径的所有组合可能，查询对应的Editor
 					List<String> strippedPaths = new ArrayList<>();
 					addStrippedPropertyPaths(strippedPaths, "", propertyPath);
 					for (Iterator<String> it = strippedPaths.iterator(); it.hasNext() && editor == null;) {
@@ -330,17 +340,18 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 					return editor;
 				}
 			}
+			//如果传入属性类型为空，通过属性路径获取属性类型
 			if (requiredType == null) {
 				requiredTypeToUse = getPropertyType(propertyPath);
 			}
 		}
-		// No property-specific editor -> check type-specific editor.
+		//未找到属性特定的编辑器继续获取属性类型特定的编辑器
 		return getCustomEditor(requiredTypeToUse);
 	}
 
 	/**
-	 * Determine whether this registry contains a custom editor
-	 * for the specified array/collection element.
+	 * 判断当前Editor列表中是否包含指定属性的Editor
+	 *
 	 * @param elementType the target type of the element
 	 * (can be {@code null} if not known)
 	 * @param propertyPath the property path (typically of the array/collection;
@@ -348,6 +359,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	 * @return whether a matching custom editor has been found
 	 */
 	public boolean hasCustomEditorForElement(@Nullable Class<?> elementType, @Nullable String propertyPath) {
+		//属性路径不为空且自定义的路径Editors不为空则直接检查路径Editors中是否存在
 		if (propertyPath != null && this.customEditorsForPath != null) {
 			for (Map.Entry<String, CustomEditorHolder> entry : this.customEditorsForPath.entrySet()) {
 				if (PropertyAccessorUtils.matchesProperty(entry.getKey(), propertyPath) &&
@@ -356,20 +368,14 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 				}
 			}
 		}
-		// No property-specific editor -> check type-specific editor.
+		// 如果没找到，检查自定义类型Editors中是否存在
 		return (elementType != null && this.customEditors != null && this.customEditors.containsKey(elementType));
 	}
 
 	/**
-	 * Determine the property type for the given property path.
-	 * <p>Called by {@link #findCustomEditor} if no required type has been specified,
-	 * to be able to find a type-specific editor even if just given a property path.
-	 * <p>The default implementation always returns {@code null}.
-	 * BeanWrapperImpl overrides this with the standard {@code getPropertyType}
-	 * method as defined by the BeanWrapper interface.
-	 * @param propertyPath the property path to determine the type for
-	 * @return the type of the property, or {@code null} if not determinable
-	 * @see BeanWrapper#getPropertyType(String)
+	 * 获取指定属性路径的属性类型，默认返回null,由子类自行扩展
+	 * @param propertyPath 属性路径
+	 * @return 属性类型
 	 */
 	@Nullable
 	protected Class<?> getPropertyType(String propertyPath) {
@@ -377,10 +383,11 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	}
 
 	/**
-	 * Get custom editor that has been registered for the given property.
-	 * @param propertyName the property path to look for
-	 * @param requiredType the type to look for
-	 * @return the custom editor, or {@code null} if none specific for this property
+	 * 获取为指定属性注册的自定义编辑器
+	 *
+	 * @param propertyName 属性路径
+	 * @param requiredType 属性类型
+	 * @return 自定义编辑器；如果没有则为null
 	 */
 	@Nullable
 	private PropertyEditor getCustomEditor(String propertyName, @Nullable Class<?> requiredType) {
@@ -390,11 +397,10 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	}
 
 	/**
-	 * Get custom editor for the given type. If no direct match found,
-	 * try custom editor for superclass (which will in any case be able
-	 * to render a value as String via {@code getAsText}).
-	 * @param requiredType the type to look for
-	 * @return the custom editor, or {@code null} if none found for this type
+	 * 通过属性类型获取自定义Editor，如果未找到继续遍历自定义编辑器列表，查看是否存在指定属性超类或接口的自定义编辑器
+	 *
+	 * @param requiredType 属性类型
+	 * @return 自定义Editor,不存在返回null
 	 * @see java.beans.PropertyEditor#getAsText()
 	 */
 	@Nullable
@@ -402,21 +408,20 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 		if (requiredType == null || this.customEditors == null) {
 			return null;
 		}
-		// Check directly registered editor for type.
+		// 从直接注册的自定义编辑器集合中获取PropertyEditor
 		PropertyEditor editor = this.customEditors.get(requiredType);
 		if (editor == null) {
-			// Check cached editor for type, registered for superclass or interface.
+			// 从缓存的编辑器集合中，获取是否有已注册超类或接口。
 			if (this.customEditorCache != null) {
 				editor = this.customEditorCache.get(requiredType);
 			}
 			if (editor == null) {
-				// Find editor for superclass or interface.
+				// 遍历查找超类的
 				for (Iterator<Class<?>> it = this.customEditors.keySet().iterator(); it.hasNext() && editor == null;) {
 					Class<?> key = it.next();
+					//如果key是requiredType的超类或接口，直接从customEditors取出对应的Editor，并存入缓存Editor<requiredType, editor>
 					if (key.isAssignableFrom(requiredType)) {
 						editor = this.customEditors.get(key);
-						// Cache editor for search type, to avoid the overhead
-						// of repeated assignable-from checks.
 						if (this.customEditorCache == null) {
 							this.customEditorCache = new HashMap<>();
 						}
@@ -429,10 +434,10 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	}
 
 	/**
-	 * Guess the property type of the specified property from the registered
-	 * custom editors (provided that they were registered for a specific type).
-	 * @param propertyName the name of the property
-	 * @return the property type, or {@code null} if not determinable
+	 * 从注册的自定义路径编辑器中获取指定属性的属性类型，如果未注册到自定义路径编辑器则直接返回null
+	 *
+	 * @param propertyName 属性路径
+	 * @return 属性类型
 	 */
 	@Nullable
 	protected Class<?> guessPropertyTypeFromEditors(String propertyName) {
@@ -454,25 +459,30 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	}
 
 	/**
-	 * Copy the custom editors registered in this instance to the given target registry.
-	 * @param target the target registry to copy to
-	 * @param nestedProperty the nested property path of the target registry, if any.
-	 * If this is non-null, only editors registered for a path below this nested property
-	 * will be copied. If this is null, all editors will be copied.
+	 * 复制当前注册类的自定义Editor列表到指定注册类
+	 *
+	 * @param target 目标注册类
+	 * @param nestedProperty 目标注册类的嵌套属性路径（最外层路径），为空则复制所有编辑器
+	 *                       例：想要复制foo.aoo、foo.boo、foo.coo三个属性的Editor
+	 *                       此时nestedProperty为foo,即如果nestedProperty为foo，则会复制foo.*的Editor
+	 *                       (nestedProperty只支持一级且必须为最外层)
 	 */
 	protected void copyCustomEditorsTo(PropertyEditorRegistry target, @Nullable String nestedProperty) {
-		String actualPropertyName =
+		//获取实际属性名称
+		String actualPropertyName =//foo.boo.coo
 				(nestedProperty != null ? PropertyAccessorUtils.getPropertyName(nestedProperty) : null);
+		//复制自定义类型Editors
 		if (this.customEditors != null) {
 			this.customEditors.forEach(target::registerCustomEditor);
 		}
+		//复制自定义路径Editors
 		if (this.customEditorsForPath != null) {
 			this.customEditorsForPath.forEach((editorPath, editorHolder) -> {
-				if (nestedProperty != null) {
+				if (nestedProperty != null) {//foo.boo.coo[0]
 					int pos = PropertyAccessorUtils.getFirstNestedPropertySeparatorIndex(editorPath);
 					if (pos != -1) {
-						String editorNestedProperty = editorPath.substring(0, pos);
-						String editorNestedPath = editorPath.substring(pos + 1);
+						String editorNestedProperty = editorPath.substring(0, pos);//foo
+						String editorNestedPath = editorPath.substring(pos + 1);//boo.coo
 						if (editorNestedProperty.equals(nestedProperty) || editorNestedProperty.equals(actualPropertyName)) {
 							target.registerCustomEditor(
 									editorHolder.getRegisteredType(), editorNestedPath, editorHolder.getPropertyEditor());
@@ -489,11 +499,20 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 
 
 	/**
-	 * Add property paths with all variations of stripped keys and/or indexes.
-	 * Invokes itself recursively with nested paths.
-	 * @param strippedPaths the result list to add to
-	 * @param nestedPath the current nested path
-	 * @param propertyPath the property path to check for keys/indexes to strip
+	 * 解析属性路径，如果路径中包含索引下标（foo[0]...）将解析出所有路径组合
+	 * 例：propertyPath = "aoo[0].boo[0].coo[0].doo" =>
+	 * strippedPaths = [
+	 * 		aoo.boo[0].coo[0].doo
+	 * 		aoo.boo.coo[0].doo
+	 * 		aoo.boo.coo.doo
+	 * 		aoo.boo[0].coo.doo
+	 * 		aoo[0].boo.coo[0].doo
+	 * 		aoo[0].boo.coo.doo
+	 * 		aoo[0].boo[0].coo.doo
+	 * 		]
+	 * @param strippedPaths 解析结果
+	 * @param nestedPath 当前的嵌套路径
+	 * @param propertyPath 带解析的属性路径
 	 */
 	private void addStrippedPropertyPaths(List<String> strippedPaths, String nestedPath, String propertyPath) {
 		int startIndex = propertyPath.indexOf(PropertyAccessor.PROPERTY_KEY_PREFIX_CHAR);
@@ -512,12 +531,12 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 			}
 		}
 	}
+
 	//endregion
 
 
 	/**
-	 * Holder for a registered custom editor with property name.
-	 * Keeps the PropertyEditor itself plus the type it was registered for.
+	 * 自定义PropertyEditor包装类，包含Editor和待注册属性类型两个属性
 	 */
 	private static final class CustomEditorHolder {
 
