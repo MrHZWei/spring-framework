@@ -28,10 +28,11 @@ import org.springframework.lang.Nullable;
 public abstract class PropertyAccessorUtils {
 
 	/**
-	 * Return the actual property name for the given property path.
-	 * @param propertyPath the property path to determine the property name
-	 * for (can include property keys, for example for specifying a map entry)
-	 * @return the actual property name, without any key elements
+	 * 获取给定属性路径的实际属性名称（不含下标索引相关符号）
+	 *  例：foo[0] => foo
+	 *
+	 * @param propertyPath 属性路径
+	 * @return 属性名称
 	 */
 	public static String getPropertyName(String propertyPath) {
 		int separatorIndex = (propertyPath.endsWith(PropertyAccessor.PROPERTY_KEY_SUFFIX) ?
@@ -111,22 +112,28 @@ public abstract class PropertyAccessorUtils {
 	}
 
 	/**
-	 * Determine whether the given registered path matches the given property path,
-	 * either indicating the property itself or an indexed element of the property.
-	 * @param propertyPath the property path (typically without index)
-	 * @param registeredPath the registered path (potentially with index)
-	 * @return whether the paths match
+	 * 判断给定的注册路径是否与给定的属性路径匹配，以指示属性本身还是该属性的索引元素。
+	 * 例：foo[], foo => true; foo[], foo[] => true;
+	 *
+	 *
+	 * @param propertyPath 注册的路径（可能带有索引）
+	 * @param registeredPath 属性路径（通常不带索引）
+	 * @return 是否匹配
 	 */
 	public static boolean matchesProperty(String registeredPath, String propertyPath) {
+		//registeredPath不是propertyPath前缀返回false 例：foo[], foo => true
 		if (!registeredPath.startsWith(propertyPath)) {
 			return false;
 		}
+		//前缀满足且长度相等直接返回ture 例：foo[], foo[] => true
 		if (registeredPath.length() == propertyPath.length()) {
 			return true;
 		}
+		//前缀满足长度不等，则必须且只能包含“[”
 		if (registeredPath.charAt(propertyPath.length()) != PropertyAccessor.PROPERTY_KEY_PREFIX_CHAR) {
 			return false;
 		}
+		//registeredPath中只能包含一个“[*]”
 		return (registeredPath.indexOf(PropertyAccessor.PROPERTY_KEY_SUFFIX_CHAR, propertyPath.length() + 1) ==
 				registeredPath.length() - 1);
 	}

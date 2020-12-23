@@ -134,10 +134,10 @@ public class BeanCreationException extends FatalBeanException {
 	}
 
 	/**
-	 * Add a related cause to this bean creation exception,
-	 * not being a direct cause of the failure but having occurred
-	 * earlier in the creation of the same bean instance.
-	 * @param ex the related cause to add
+	 * 向此bean创建异常添加一个相关异常，
+	 * 不是导致失败的直接原因，而是在创建相同bean实例的早期抛出的的
+	 *
+	 * @param ex 添加相关异常
 	 */
 	public void addRelatedCause(Throwable ex) {
 		if (this.relatedCauses == null) {
